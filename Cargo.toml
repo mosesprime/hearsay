@@ -1,0 +1,8 @@
+[workspace]
+resolver = "2"
+members = ["hearsay-ipfs"]
+
+[profile.release]
+lto = true
+
+[workspace.dependencies]

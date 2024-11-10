@@ -923,6 +923,7 @@ dependencies = [
  "multihash-codetable",
  "multihash-derive",
  "tokio",
+ "tokio-util",
  "tracing",
  "wasm-bindgen-futures",
 ]

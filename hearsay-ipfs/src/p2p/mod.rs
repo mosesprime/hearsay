@@ -1,9 +1,10 @@
 pub(crate) use behaviour::IpfsBehaviour;
 use libp2p::{swarm::NetworkBehaviour, Swarm};
-
+use std::fmt::Debug;
 use crate::config::IpfsConfig;
 
 mod behaviour;
+pub(crate) use behaviour::IpfsBehaviourEvent;
 
 /// Utility to create a new [Swarm] for non-wasm.
 #[cfg(not(target_arch = "wasm32"))]
@@ -12,6 +13,7 @@ pub(crate) async fn create_swarm<C>(
 ) -> Result<Swarm<IpfsBehaviour<C>>, Box<dyn std::error::Error>>
 where 
     C: NetworkBehaviour,
+    <C as NetworkBehaviour>::ToSwarm: Debug + Send,
 {
     let keypair = ipfs_config.keypair;
     let peer_id = keypair.public().to_peer_id();
@@ -44,6 +46,7 @@ pub(crate) async fn create_swarm<C>(
 ) -> Result<Swarm<IpfsBehaviour<C>>, Box<dyn std::error::Error>>
 where 
     C: NetworkBehaviour,
+    <C as NetworkBehaviour>::ToSwarm: Debug + Send,
 {
     let keypair = ipfs_config.keypair;
     let peer_id = keypair.public().to_peer_id();

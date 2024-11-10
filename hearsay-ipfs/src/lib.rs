@@ -9,6 +9,7 @@ use repo::Repository;
 use task::IpfsTask;
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) use tokio::task::spawn;
+use tokio_util::sync::CancellationToken;
 #[cfg(target_arch = "wasm32")]
 pub(crate) use wasm_bindgen_futures::spawn_local as spawn;
 
@@ -17,20 +18,14 @@ use libp2p::{futures::{channel::{mpsc, oneshot}, SinkExt}, identity::Keypair, sw
 
 
 /// IPFS node, built from [config::IpfsConfig].
-pub struct Ipfs<C>
-where 
-    C: NetworkBehaviour,
-{
+pub struct Ipfs {
     pub(crate) repo: Repository,
-    pub(crate) swarm: Swarm<IpfsBehaviour<C>>,
+    pub(crate) cancel_token: CancellationToken,
     pub(crate) task_tx: mpsc::Sender<IpfsTask>
 }
 
 
-impl<C> Ipfs<C>
-where 
-    C: NetworkBehaviour,
-{
+impl Ipfs {
     /// Establish a new connection to peer.
     pub async fn connect(&self, dial_opts: DialOpts) -> Result<(), Box<dyn std::error::Error>> {
         let (tx, rx) = oneshot::channel();

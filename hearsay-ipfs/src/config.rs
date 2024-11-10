@@ -1,13 +1,15 @@
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 
-use libp2p::{futures::{channel::mpsc, select, StreamExt}, identity::Keypair, kad, swarm::NetworkBehaviour, Multiaddr, StreamProtocol};
+use libp2p::{futures::{channel::mpsc}, identity::Keypair, kad, swarm::NetworkBehaviour, Multiaddr, StreamProtocol};
+use tokio_util::sync::CancellationToken;
 
-use crate::{p2p::create_swarm, repo::{self, RepoInner, Repository}, task::IpfsTask, Ipfs};
+use crate::{p2p::create_swarm, repo::{self, RepoInner, Repository}, task::{IpfsHandler, IpfsTask}, Ipfs};
 
 /// Uninitiallized IPFS configuration.
 pub struct IpfsConfig<C> 
 where 
     C: NetworkBehaviour,
+    <C as NetworkBehaviour>::ToSwarm: Debug + Send,
 {
     pub keypair: Keypair,
     /// nodes to bootstrap from
@@ -20,7 +22,8 @@ where
 
 impl<C> IpfsConfig<C> 
 where 
-    C: NetworkBehaviour,
+    C: NetworkBehaviour + Send,
+    <C as NetworkBehaviour>::ToSwarm: Debug + Send,
 {
     pub fn new(keypair: Keypair) -> Self {
         Self {
@@ -34,24 +37,23 @@ where
 
     /// Spawns IPFS background task.
     /// Returns [Ipfs] facade. 
-    pub async fn start(self) -> Result<Ipfs<C>, Box<dyn std::error::Error>> {
+    pub async fn start(self) -> Result<Ipfs, Box<dyn std::error::Error>> {
         let repo = Repository { inner : Arc::new(RepoInner { capacity: 0.into() })}; // TODO: here
 
         let swarm = create_swarm(self).await?;
 
-        let (task_tx, mut task_rx) = mpsc::channel::<IpfsTask>(0);
+        let (task_tx, task_rx) = mpsc::channel::<IpfsTask>(0);
+        let cancel_token = CancellationToken::new();
 
+        let mut ipfs_handler = IpfsHandler::new(repo.clone(), swarm, cancel_token.clone(), task_rx);
+        
         crate::spawn(async move { 
-            loop {
-            select! { // TODO: make agnostic
-                task = task_rx.select_next_some() => { task.handle() },
-                //_ = cancel_token.cancelled() => { break; },
-            }
-        }});
+            ipfs_handler.run().await; // TODO: need this await?
+        });
 
         Ok(Ipfs {
-            repo: repo.clone(),
-            swarm,
+            repo,
+            cancel_token,
             task_tx,
         })
     }

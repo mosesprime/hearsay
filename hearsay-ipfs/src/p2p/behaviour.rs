@@ -1,10 +1,13 @@
-use libp2p::{identity::Keypair, kad, swarm::{behaviour::toggle::Toggle, NetworkBehaviour, ToSwarm}, Multiaddr};
+use std::fmt::Debug;
+
+use libp2p::{identity::Keypair, kad, swarm::{behaviour::toggle::Toggle, NetworkBehaviour}, Multiaddr};
 
 /// IPFS [NetworkBehaviour]
 #[derive(NetworkBehaviour)]
 pub(crate) struct IpfsBehaviour<C>
 where 
     C: NetworkBehaviour,
+    <C as NetworkBehaviour>::ToSwarm: Debug + Send, 
 {
     pub kademlia: Toggle<kad::Behaviour<kad::store::MemoryStore>>,
     pub custom: Toggle<C>,
@@ -13,6 +16,7 @@ where
 impl<C> IpfsBehaviour<C>
 where 
     C: NetworkBehaviour,
+    <C as NetworkBehaviour>::ToSwarm: Debug + Send,
 {
     pub(crate) fn new(
         keypair: &Keypair,
@@ -25,7 +29,7 @@ where
         let store = kad::store::MemoryStore::new(local_id);
         let kademlia = kad::Behaviour::with_config(local_id, store, kad_config);
 
-        let mut behaviour = IpfsBehaviour {
+        let behaviour = IpfsBehaviour {
             kademlia: Toggle::from(Some(kademlia)),
             custom: Toggle::from(custom),
         };

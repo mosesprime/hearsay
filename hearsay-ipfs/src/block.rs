@@ -12,6 +12,14 @@ pub struct Block {
 }
 
 impl Block {
+    pub fn new(cid: Cid, data: Bytes) -> Result<Self, Error> {
+        let block = Block { cid, data };
+        if !block.verify() {
+            return Err(todo!());
+        }
+        Ok(block)
+    }
+
     pub fn cid(&self) -> &Cid {
         &self.cid
     }

@@ -4,10 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+async-trait = "0.1.83"
 bytes.workspace = true
 cid.workspace = true
 multihash-codetable = "0.1.4"
 multihash-derive = "0.9.1"
+thiserror.workspace = true
 tokio-util = { version = "0.7.12", default-features = false }
 tracing.workspace = true
 

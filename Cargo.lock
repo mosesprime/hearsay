@@ -97,7 +97,7 @@ dependencies = [
  "nom",
  "num-traits",
  "rusticata-macros",
- "thiserror",
+ "thiserror 1.0.68",
  "time",
 ]
 
@@ -917,11 +917,13 @@ dependencies = [
 name = "hearsay-ipfs"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "bytes",
  "cid",
  "libp2p",
  "multihash-codetable",
  "multihash-derive",
+ "thiserror 2.0.3",
  "tokio",
  "tokio-util",
  "tracing",
@@ -976,7 +978,7 @@ dependencies = [
  "once_cell",
  "rand",
  "socket2",
- "thiserror",
+ "thiserror 1.0.68",
  "tinyvec",
  "tokio",
  "tracing",
@@ -999,7 +1001,7 @@ dependencies = [
  "rand",
  "resolv-conf",
  "smallvec",
- "thiserror",
+ "thiserror 1.0.68",
  "tokio",
  "tracing",
 ]
@@ -1400,7 +1402,7 @@ dependencies = [
  "multiaddr",
  "pin-project",
  "rw-stream-sink",
- "thiserror",
+ "thiserror 1.0.68",
 ]
 
 [[package]]
@@ -1448,7 +1450,7 @@ dependencies = [
  "rand",
  "rw-stream-sink",
  "smallvec",
- "thiserror",
+ "thiserror 1.0.68",
  "tracing",
  "unsigned-varint 0.8.0",
  "void",
@@ -1515,7 +1517,7 @@ dependencies = [
  "quick-protobuf",
  "rand",
  "sha2",
- "thiserror",
+ "thiserror 1.0.68",
  "tracing",
  "zeroize",
 ]
@@ -1542,7 +1544,7 @@ dependencies = [
  "rand",
  "sha2",
  "smallvec",
- "thiserror",
+ "thiserror 1.0.68",
  "tracing",
  "uint",
  "void",
@@ -1606,7 +1608,7 @@ dependencies = [
  "sha2",
  "snow",
  "static_assertions",
- "thiserror",
+ "thiserror 1.0.68",
  "tracing",
  "x25519-dalek",
  "zeroize",
@@ -1631,7 +1633,7 @@ dependencies = [
  "ring 0.17.8",
  "rustls",
  "socket2",
- "thiserror",
+ "thiserror 1.0.68",
  "tokio",
  "tracing",
 ]
@@ -1705,7 +1707,7 @@ dependencies = [
  "ring 0.17.8",
  "rustls",
  "rustls-webpki 0.101.7",
- "thiserror",
+ "thiserror 1.0.68",
  "x509-parser",
  "yasna",
 ]
@@ -1735,7 +1737,7 @@ dependencies = [
  "either",
  "futures",
  "libp2p-core",
- "thiserror",
+ "thiserror 1.0.68",
  "tracing",
  "yamux 0.12.1",
  "yamux 0.13.3",
@@ -1964,7 +1966,7 @@ dependencies = [
  "anyhow",
  "byteorder",
  "paste",
- "thiserror",
+ "thiserror 1.0.68",
 ]
 
 [[package]]
@@ -1978,7 +1980,7 @@ dependencies = [
  "log",
  "netlink-packet-core",
  "netlink-sys",
- "thiserror",
+ "thiserror 1.0.68",
  "tokio",
 ]
 
@@ -2307,7 +2309,7 @@ dependencies = [
  "asynchronous-codec",
  "bytes",
  "quick-protobuf",
- "thiserror",
+ "thiserror 1.0.68",
  "unsigned-varint 0.8.0",
 ]
 
@@ -2325,7 +2327,7 @@ dependencies = [
  "rustc-hash",
  "rustls",
  "socket2",
- "thiserror",
+ "thiserror 1.0.68",
  "tokio",
  "tracing",
 ]
@@ -2342,7 +2344,7 @@ dependencies = [
  "rustc-hash",
  "rustls",
  "slab",
- "thiserror",
+ "thiserror 1.0.68",
  "tinyvec",
  "tracing",
 ]
@@ -2509,7 +2511,7 @@ dependencies = [
  "netlink-packet-route",
  "netlink-proto",
  "nix",
- "thiserror",
+ "thiserror 1.0.68",
  "tokio",
 ]
 
@@ -2857,7 +2859,16 @@ version = "1.0.68"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "02dd99dc800bbb97186339685293e1cc5d9df1f8fae2d0aecd9ff1c77efea892"
 dependencies = [
- "thiserror-impl",
+ "thiserror-impl 1.0.68",
+]
+
+[[package]]
+name = "thiserror"
+version = "2.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c006c85c7651b3cf2ada4584faa36773bd07bac24acfb39f3c431b36d7e667aa"
+dependencies = [
+ "thiserror-impl 2.0.3",
 ]
 
 [[package]]
@@ -2865,6 +2876,17 @@ name = "thiserror-impl"
 version = "1.0.68"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7c61ec9a6f64d2793d8a45faba21efbe3ced62a886d44c36a009b2b519b4c7e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.87",
+]
+
+[[package]]
+name = "thiserror-impl"
+version = "2.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f077553d607adc1caf65430528a576c757a71ed73944b66ebb58ef2bbd243568"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3491,7 +3513,7 @@ dependencies = [
  "nom",
  "oid-registry",
  "rusticata-macros",
- "thiserror",
+ "thiserror 1.0.68",
  "time",
 ]
 

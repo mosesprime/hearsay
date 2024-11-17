@@ -11,14 +11,16 @@ use crate::Block;
 
 use super::BlockStore;
 
-/// In memory [Block] store.
+/// In memory [BlockStore].
 pub struct MemBlockStore {
-    inner: Arc<RwLock<HashMap<Cid, Bytes>>>
+    inner: RwLock<HashMap<Cid, Bytes>>
 }
 
 impl MemBlockStore {
     pub fn new() -> Self {
-        Self { inner: Arc::new(RwLock::new(HashMap::new())) }
+        Self { 
+            inner: RwLock::new(HashMap::new()),
+        }
     }
 }
 

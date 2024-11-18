@@ -1,5 +1,6 @@
 mod block;
 mod config;
+mod ipns;
 mod p2p;
 mod repo;
 mod task;

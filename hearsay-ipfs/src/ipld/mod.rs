@@ -2,15 +2,16 @@ use std::{any::TypeId, collections::BTreeMap, fmt, io::{self, BufRead, Cursor, W
 
 use bytes::Bytes;
 use cid::Cid;
+use dag_cbor::DagCbor;
+use dag_json::DagJson;
+use dag_pb::DagPb;
 use thiserror::Error;
 
-#[cfg(feature = "dag-cbor")]
-mod dag_cbor;
-// #[cfg(feature = "dag-json")]
-// TODO: mod dag_json;
-// #[cfg(feature = "dag-pb")]
-// TODO: mod dag_pb;
+use crate::Block;
 
+mod dag_cbor;
+mod dag_json;
+mod dag_pb;
 
 pub trait Encode<C: Codec + ?Sized> {
     fn encode<W: Write>(&self, c: &C, w: &mut W) -> Result<(), CodecError>;
@@ -20,7 +21,7 @@ pub trait Decode<C: Codec>: Sized {
     fn decode<R: BufRead>(c: &C, r: &mut R) -> Result<Self, CodecError>;
 }
 
-pub trait Codec: Links + Sized {
+pub trait Codec: Sized {
     /// See <https://github.com/multiformats/multicodec/blob/master/table.csv>.
     const CODE: u64;
 
@@ -43,18 +44,40 @@ pub trait Codec: Links + Sized {
     }
 }
 
-pub trait Links {
-    type LinkError;
+/// Identify a specific multicodec format. See <https://github.com/multiformats/multicodec/blob/master/table.csv>
+#[repr(u64)]
+pub enum CodecKind {
+    /// No codec 0x55
+    Raw = 0x55,
+    /// DAG-Protobuf codec 0x70
+    DagPb = DagPb::CODE,
+    /// DAG-CBOR codec 0x71
+    DagCbor = DagCbor::CODE,
+    /// DAG-JSON codec 0x0129
+    DagJson = DagJson::CODE,
+}
 
-    fn links(bytes: &[u8]) -> Result<impl Iterator<Item = Cid>, Self::LinkError>;
+impl TryFrom<u64> for CodecKind {
+    type Error = CodecError;
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
+        Ok(match value {
+            0x55 => CodecKind::Raw,
+            DagPb::CODE => CodecKind::DagPb,
+            DagCbor::CODE => CodecKind::DagCbor,
+            DagJson::CODE => CodecKind::DagJson,
+            _ => return Err(CodecError::UnsupportedCodec(value)),
+        })
+    }
 }
 
 #[derive(Debug, Error)]
 pub enum CodecError {
-    #[error("{}", 0)]
+    #[error(transparent)]
     Io(#[from] io::Error),
     #[error("number is not properly contained")]
     NumberOutOfBounds,
+    #[error("codec id {:x?} is not supported", 0)]
+    UnsupportedCodec(u64),
 }
 
 #[derive(Debug)]
@@ -132,6 +155,28 @@ impl Ipld {
         }
     }
 
+}
+
+impl TryFrom<Block> for Ipld {
+    type Error = CodecError;
+    fn try_from(value: Block) -> Result<Self, Self::Error> {
+        let kind = CodecKind::try_from(value.cid().codec())?;
+        Ok(match kind {
+            CodecKind::Raw => Ipld::Bytes(value.inner().clone()), // PERF: remove clone?
+            CodecKind::DagPb => {
+                let pb = DagPb;
+                pb.decode_from_slice(value.data())?
+            },
+            CodecKind::DagCbor => {
+                let cbor = DagCbor;
+                cbor.decode_from_slice(value.data())?
+            },
+            CodecKind::DagJson => {
+                let json = DagJson;
+                json.decode_from_slice(value.data())?
+            },
+        })
+    }
 }
 
 impl From<Option<Ipld>> for Ipld {

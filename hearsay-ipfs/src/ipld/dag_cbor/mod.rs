@@ -6,7 +6,7 @@ use cid::Cid;
 use dec::*;
 use enc::*;
 use thiserror::Error;
-use super::{Codec, CodecError, Decode, Encode, Ipld, Links};
+use super::{Codec, CodecError, Decode, Encode, Ipld};
 
 mod dec;
 mod enc;
@@ -17,14 +17,6 @@ pub struct DagCbor;
 
 impl Codec for DagCbor {
     const CODE: u64 = 0x71;
-}
-
-impl Links for DagCbor {
-    type LinkError = CodecError;
-
-    fn links(bytes: &[u8]) -> Result<impl Iterator<Item = Cid>, Self::LinkError> {
-        todo!()
-    }
 }
 
 impl Encode<DagCbor> for Ipld {
@@ -126,7 +118,7 @@ impl Into<u8> for Header {
 
 #[derive(Debug, Error)]
 pub enum DagCborError {
-    #[error("{}", 0)]
+    #[error(transparent)]
     IoError(#[from] io::Error),
     #[error("number not properly confined")]
     NumberOutOfBounds,

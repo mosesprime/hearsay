@@ -25,7 +25,4 @@ wasm-bindgen-futures = "0.4.49"
 tokio = { features = ["full"], workspace = true }
 
 [features]
-default = [ "dag-cbor" ]
-dag-cbor = []
-# TODO: dag-json = []
-# TODO: dag-pb = []
+default = []

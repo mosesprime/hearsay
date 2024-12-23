@@ -1,4 +1,4 @@
-use std::{fmt::Debug, hash::Hash};
+use std::{fmt::Debug, hash::Hash, io};
 
 use bytes::Bytes;
 use cid::Cid;
@@ -12,10 +12,10 @@ pub struct Block {
 }
 
 impl Block {
-    pub fn new(cid: Cid, data: Bytes) -> Result<Self, Error> {
+    pub fn new(cid: Cid, data: Bytes) -> Result<Self, io::Error> {
         let block = Block { cid, data };
         if !block.verify() {
-            return Err(todo!());
+            return Err(io::ErrorKind::InvalidData.into());
         }
         Ok(block)
     }

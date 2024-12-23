@@ -1,4 +1,4 @@
-use std::{any::TypeId, collections::BTreeMap, fmt, io::{self, BufRead, Cursor, Write}};
+use std::{any::TypeId, collections::BTreeMap, fmt, io::{self, Cursor, Read, Seek, Write}};
 
 use bytes::Bytes;
 use cid::Cid;
@@ -18,7 +18,7 @@ pub trait Encode<C: Codec + ?Sized> {
 }
 
 pub trait Decode<C: Codec>: Sized {
-    fn decode<R: BufRead>(c: &C, r: &mut R) -> Result<Self, CodecError>;
+    fn decode<R: Read + Seek>(c: &C, r: &mut R) -> Result<Self, CodecError>;
 }
 
 pub trait Codec: Sized {
@@ -35,7 +35,7 @@ pub trait Codec: Sized {
         Ok(out)
     }
 
-    fn decode<T: Decode<Self>, R: BufRead>(&self, r: &mut R) -> Result<T, CodecError> {
+    fn decode<T: Decode<Self>, R: Read + Seek>(&self, r: &mut R) -> Result<T, CodecError> {
         T::decode(self, r)
     }
 
@@ -78,6 +78,8 @@ pub enum CodecError {
     NumberOutOfBounds,
     #[error("codec id {:x?} is not supported", 0)]
     UnsupportedCodec(u64),
+    #[error("malformed data: {}", 0)]
+    MalformedData(&'static str),
 }
 
 #[derive(Debug)]

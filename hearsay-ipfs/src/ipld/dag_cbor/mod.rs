@@ -1,11 +1,9 @@
 //! IPLD DAG-CBOR Implimentation
 //! Note: For use in IPLD DAG-CBOR only. Not nessisarily compatable otherwise.
 
-use std::io::{self, BufRead, Write};
-use cid::Cid;
+use std::io::{Read, Seek, Write};
 use dec::*;
 use enc::*;
-use thiserror::Error;
 use super::{Codec, CodecError, Decode, Encode, Ipld};
 
 mod dec;
@@ -36,13 +34,50 @@ impl Encode<DagCbor> for Ipld {
 }
 
 impl Decode<DagCbor> for Ipld {
-    fn decode<R: BufRead>(c: &DagCbor, r: &mut R) -> Result<Self, CodecError> {
-        todo!("decode ipld from dag-cbor")
+    fn decode<R: Read + Seek>(_: &DagCbor, r: &mut R) -> Result<Self, CodecError> {
+        let header = read_header(r).map_err(|e| CodecError::Io(e))?;
+        Ok(match header.major_type {
+            MajorType::PositiveInt => Self::Integer(read_uint(r, &header)?.into()),
+            MajorType::NegativeInt => Self::Integer(-1i128 - (read_uint(r, &header)? as i128)),
+            MajorType::ByteString => {
+                let len = read_uint(r, &header)?;
+                Self::Bytes(read_bytes(r, len)?)
+            },
+            MajorType::TextString => {
+                let len = read_uint(r, &header)?;
+                Self::String(read_string(r, len)?)
+            },
+            MajorType::Array => {
+                let len = read_uint(r, &header)?;
+                Self::List(read_list(r, len)?)
+            },
+            MajorType::Map => {
+                let len = read_uint(r, &header)?;
+                Self::Map(read_map(r, len)?)
+            },
+            MajorType::Tag => {
+                let tag = read_uint(r, &header)?;
+                if tag == 42 {
+                    Self::Link(read_link(r, &header)?)
+                } else {
+                    return Err(CodecError::MalformedData("unknown tag"));
+                }
+            },
+            MajorType::Other => match header {
+                Header::NULL => Self::Null,
+                Header::TRUE => Self::Bool(true),
+                Header::FALSE => Self::Bool(false),
+                Header::F64 => Self::Float(read_f64(r)?),
+                // TODO: f16 & f32 ?
+                _ => return Err(CodecError::MalformedData("unknown header type")),
+            },
+        })
     }
 }
 
 /// 3-bit [Major Type](https://datatracker.ietf.org/doc/html/rfc8949#section-3.1).
 #[repr(u8)]
+#[derive(Debug, PartialEq)]
 pub(super) enum MajorType {
     PositiveInt = 0,
     NegativeInt = 1,
@@ -71,6 +106,7 @@ impl Into<u8> for MajorType {
 pub(crate) type ShortCount = u8;
 
 /// 1-byte data item header
+#[derive(Debug, PartialEq)]
 pub(crate) struct Header {
     major_type: MajorType,
     short_count: u8,
@@ -116,19 +152,12 @@ impl Into<u8> for Header {
     }
 }
 
-#[derive(Debug, Error)]
-pub enum DagCborError {
-    #[error(transparent)]
-    IoError(#[from] io::Error),
-    #[error("number not properly confined")]
-    NumberOutOfBounds,
-}
-
 #[cfg(test)]
 mod tests {
+    use super::*;
 
     #[test]
     fn dag_cbor_roundtrips(){
-        todo!()
+        // TODO: DAG-CBOR tests
     }
 }

@@ -1,4 +1,4 @@
-use std::io::{BufRead, Write};
+use std::io::{Read, Seek, Write};
 
 use super::{Codec, CodecError, Decode, Encode, Ipld};
 
@@ -17,7 +17,7 @@ impl Encode<DagPb> for Ipld {
 }
 
 impl Decode<DagPb> for Ipld {
-    fn decode<R: BufRead>(c: &DagPb, r: &mut R) -> Result<Self, CodecError> {
+    fn decode<R: Read + Seek>(c: &DagPb, r: &mut R) -> Result<Self, CodecError> {
         todo!()
     }
 }

@@ -1,9 +1,9 @@
-use std::{fmt::Debug, sync::Arc};
+use std::fmt::Debug;
 
-use libp2p::{futures::{channel::mpsc}, identity::Keypair, kad, swarm::NetworkBehaviour, Multiaddr, StreamProtocol};
+use libp2p::{futures::channel::mpsc, identity::Keypair, kad, swarm::NetworkBehaviour, Multiaddr, StreamProtocol};
 use tokio_util::sync::CancellationToken;
 
-use crate::{p2p::create_swarm, repo::{self, RepoInner, Repository}, task::{IpfsHandler, IpfsTask}, Ipfs};
+use crate::{p2p::create_swarm, repo::Repository, task::{IpfsHandler, IpfsTask}, Ipfs};
 
 /// Uninitiallized IPFS configuration.
 pub struct IpfsConfig<C> 
@@ -14,7 +14,6 @@ where
     pub keypair: Keypair,
     /// nodes to bootstrap from
     pub bootstrap: Vec<Multiaddr>,
-    pub repo_config: repo::Config,
     pub kad_config: kad::Config,
     /// custom [NetworkBehaviour] 
     pub custom: Option<C>
@@ -29,7 +28,6 @@ where
         Self {
             keypair,
             bootstrap: vec![],
-            repo_config: repo::Config::default(),
             kad_config: kad::Config::new(StreamProtocol::new("/test")), // TODO: change protocol name
             custom: None,
         }
@@ -38,7 +36,7 @@ where
     /// Spawns IPFS background task.
     /// Returns [Ipfs] facade. 
     pub async fn start(self) -> Result<Ipfs, Box<dyn std::error::Error>> {
-        let repo = Repository { inner : Arc::new(RepoInner { capacity: 0.into() })}; // TODO: here
+        let repo: Repository = todo!(); // TODO: init repo
 
         let swarm = create_swarm(self).await?;
 

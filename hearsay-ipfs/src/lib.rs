@@ -3,6 +3,7 @@ mod config;
 mod ipld;
 mod ipns;
 mod p2p;
+mod path;
 mod repo;
 mod task;
 
@@ -55,7 +56,6 @@ async fn test_ipfs_start() {
     let _ = IpfsConfig::<libp2p::swarm::dummy::Behaviour> {
         keypair: Keypair::generate_ed25519(),
         bootstrap: vec![],
-        repo_config: repo::Config::default(),
         kad_config: libp2p::kad::Config::new(StreamProtocol::new("/test")),
         custom: None,
     }.start().await.unwrap();

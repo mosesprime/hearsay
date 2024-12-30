@@ -1,95 +1,111 @@
-use std::{collections::{hash_map::Entry, HashMap}, sync::Arc};
+use std::collections::{hash_map::Entry, HashMap};
 
 use async_trait::async_trait;
 use bytes::Bytes;
 use cid::Cid;
-use libp2p::futures::{stream::{self, BoxStream}, StreamExt};
 use tokio::sync::RwLock;
-use tracing::trace; // TODO: better RwLock w/o tokio?
-
-use crate::Block;
+use tracing::trace;
+use crate::{repo::RepoError, Block};
 
 use super::BlockStore;
 
-/// In memory [BlockStore].
 pub struct MemBlockStore {
-    inner: RwLock<HashMap<Cid, Bytes>>
+    inner: RwLock<HashMap<Cid, Bytes>>,
 }
 
 impl MemBlockStore {
     pub fn new() -> Self {
         Self { 
-            inner: RwLock::new(HashMap::new()),
+            inner: RwLock::new(HashMap::default()),
         }
     }
 }
 
 #[async_trait]
 impl BlockStore for MemBlockStore {
-    async fn contains(&self, cid: &Cid) -> Result<bool, Error> {
+    async fn contains(&self, cid: &Cid) -> Result<bool, RepoError> {
         Ok(self.inner.read().await.contains_key(cid))
     }
 
-    async fn list(&self) -> BoxStream<Cid> {
+    async fn get(&self, cid: &Cid) -> Result<Block, RepoError> {
         let inner = &*self.inner.read().await;
-        stream::iter(inner.keys().copied().collect::<Vec<_>>()).boxed()
-    }
-
-    async fn get(&self, cid: &Cid) -> Result<Option<Block>, Error> {
-        let inner = &*self.inner.read().await;
-        if let Some(bytes) = inner.get(cid) {
-            return Some(Block::new(*cid, bytes.clone())?);
+        if let Some(data) = inner.get(cid) {
+            let block = Block::new(*cid, data.clone()).map_err(|_| RepoError::IncorrectCid)?;
+            return Ok(block);
         }
-        Ok(None)
+        Err(RepoError::NotFound)
     }
 
-    async fn put(&self, block: &Block) -> Result<(), Error> {
+    async fn get_many(&self, cids: &[&Cid]) -> Result<Vec<Block>, RepoError> {
+        let inner = &*self.inner.read().await;
+        let mut blocks = vec![];
+        for cid in cids {
+            if let Some(data) = inner.get(*cid) {
+                let block = Block::new(**cid, data.clone()).map_err(|_| RepoError::IncorrectCid)?;
+                blocks.push(block);
+            } else {
+                return Err(RepoError::NotFound);
+            }
+        }
+        Ok(blocks)
+    }
+
+    async fn put(&self, block: Block) -> Result<(), RepoError> {
         let inner = &mut *self.inner.write().await;
         match inner.entry(*block.cid()) {
-            Entry::Occupied(_) => {
-                trace!("block {} already exists", block.cid());
-                Ok(())
-            },
             Entry::Vacant(e) => {
                 e.insert(block.inner().clone());
-                Ok(())
+            },
+            Entry::Occupied(_) => {
+                trace!("block {:?} already exists", block.cid());
             },
         }
+        Ok(())
     }
 
-    async fn remove(&self, cid: &Cid) -> Result<(), Error> {
+    async fn remove(&self, cid: &Cid) -> Result<(), RepoError> {
         let inner = &mut *self.inner.write().await;
         match inner.remove(cid) {
             Some(_) => Ok(()),
-            None => Err(todo!()),
+            None => Err(RepoError::NotFound),
         }
+    }
+
+    async fn remove_many(&self, cids: &[&Cid]) -> Result<(), RepoError> {
+        let inner = &mut *self.inner.write().await;
+        for cid in cids {
+            if inner.remove(*cid).is_none() {
+                return Err(RepoError::NotFound);
+            }
+        }
+        Ok(())
+    }
+
+    async fn list(&self) -> Result<Vec<Cid>, RepoError> {
+        let inner = &*self.inner.read().await;
+        Ok(inner.keys().copied().collect::<Vec<_>>())
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cid::Cid;
-    use multihash_codetable::Code;
 
-    
     #[tokio::test]
-    async fn test_mem_blockstore() {
+    async fn test_mem_block_store() {
         let store = MemBlockStore::new();
-        let data = b"banana";
-        let cid = Cid::new_v1(0, Code::Sha2_256.digest(data)); // TODO: use propper codec instead
-        let block = Block::new(cid, data.to_vec().into()).unwrap();
+        let value = b"banana";
+        let block = Block::new(cid, data)
 
-        assert!(!store.contains(&cid).await.unwrap());
-        assert!(store.get(&cid).await.unwrap().is_none());
-        assert!(store.remove(&cid).await.is_err());
-
-        assert!(store.put(&block).await.unwrap().is_ok());
-        assert!(store.contains(&cid).await.unwrap());
-        assert!(store.get(&cid).await.unwrap() == Some(block.clone()));
-        assert!(store.remove(&cid).await.unwrap().is_ok());
-        assert!(!store.contains(&cid).await.unwrap());
+        assert!(!store.contains(key).await.unwrap());
+        assert!(store.get(key).await.unwrap() == None);
+        store.remove(key).await.unwrap();
+        store.put(key, value).await.unwrap();
+        assert!(store.contains(key).await.unwrap());
+        assert!(store.get(key).await.unwrap() == Some(Bytes::from_static(value)));
+        store.remove(key).await.unwrap();
+        assert!(!store.contains(key).await.unwrap());
     }
-
-    // TODO: add test for listing blocks
-}
+}*/ 
+// TODO: add blockstore tests

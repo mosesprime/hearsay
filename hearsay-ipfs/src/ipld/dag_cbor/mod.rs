@@ -141,7 +141,7 @@ impl From<u8> for Header {
     fn from(value: u8) -> Self {
         Self { 
             major_type: (value << 5).into(),
-            short_count: value & 0x0001_1111,
+            short_count: value & 0b0001_1111,
         }
     }
 }

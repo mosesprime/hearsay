@@ -5,6 +5,8 @@ use libp2p::futures::stream::{self, BoxStream};
 use tokio::sync::RwLock;
 use tracing::trace;
 
+use crate::repo::RepoError;
+
 use super::KeyStore;
 
 /// In memory [KeyStore].
@@ -22,20 +24,25 @@ impl MemKeyStore {
 
 #[async_trait]
 impl KeyStore for MemKeyStore {
-    async fn contains(&self, domain: &str) -> Result<bool, Error> {
+    async fn contains(&self, domain: &str) -> Result<bool, RepoError> {
         Ok(self.inner.read().await.contains_key(domain))
     }
 
-    async fn list(&self) -> Result<BoxStream<&str>, Error> {
-        let inner = self.inner.read().await;
-        stream::iter(inner.iter().map(|(d, _)| d.as_str()).collect::<Vec<_>>())
+    async fn list(&self) -> Result<Vec<String>, RepoError> {
+        let inner = &*self.inner.read().await;
+        let keys = inner.clone().into_keys().collect();
+        Ok(keys)
     }
 
-    async fn get(&self, domain: &str) -> Result<Option<&[u8]>, Error> {
-        Ok(self.inner.read().await.get(domain).map(|k| k.as_slice()))
+    async fn get(&self, domain: &str) -> Result<Vec<u8>, RepoError> {
+        let inner = &*self.inner.read().await;
+        if let Some(data) = inner.get(domain) {
+            return Ok(data.to_owned());
+        }
+        Err(RepoError::NotFound)
     }
 
-    async fn put(&self, domain: &str, key: &[u8]) -> Result<(), Error> {
+    async fn put(&self, domain: &str, key: &[u8]) -> Result<(), RepoError> {
         let inner = &mut *self.inner.write().await;
         match inner.entry(domain.into()) {
             Entry::Occupied(mut oe) => {
@@ -49,10 +56,10 @@ impl KeyStore for MemKeyStore {
         Ok(())
     }
 
-    async fn remove(&self, domain: &str) -> Result<(), Error> {
+    async fn remove(&self, domain: &str) -> Result<(), RepoError> {
         let inner = &mut *self.inner.write().await;
         match inner.remove(domain) {
-            Some(k) => {
+            Some(mut k) => {
                 // zero initialized elements
                 k.iter_mut().for_each(|i| *i = 0);
                 // drop elements and set len to 0
@@ -63,7 +70,7 @@ impl KeyStore for MemKeyStore {
                 });
                 Ok(())
             },
-            None => Err(todo!()),
+            None => Err(RepoError::NotFound),
         }
     }
 }

@@ -6,6 +6,7 @@ mod p2p;
 mod path;
 mod repo;
 mod task;
+mod unixfs;
 
 use p2p::IpfsBehaviour;
 use repo::Repository;
@@ -19,8 +20,8 @@ pub(crate) use wasm_bindgen_futures::spawn_local as spawn;
 pub use block::Block;
 use libp2p::{futures::{channel::{mpsc, oneshot}, SinkExt}, identity::Keypair, swarm::{dial_opts::DialOpts, NetworkBehaviour}, PeerId, StreamProtocol, Swarm};
 
-
 /// IPFS node, built from [config::IpfsConfig].
+#[derive(Clone)]
 pub struct Ipfs {
     pub(crate) repo: Repository,
     pub(crate) cancel_token: CancellationToken,

@@ -12,6 +12,7 @@ use crate::Block;
 mod dag_cbor;
 mod dag_json;
 mod dag_pb;
+mod raw;
 
 pub trait Encode<C: Codec + ?Sized> {
     fn encode<W: Write>(&self, c: &C, w: &mut W) -> Result<(), CodecError>;
